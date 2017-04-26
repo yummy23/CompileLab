@@ -3,7 +3,6 @@
 
 extern int errorFlag;
 extern FILE* yyin;
-extern int lineno;
 extern int yy_flex_debug;
 int main(int argc, char** argv) {
 	if (argc <= 1) return -1;

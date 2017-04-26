@@ -5,7 +5,9 @@
 
 #define INTTYPE 0
 #define FLOATTYPE 1
-
+#define FUNCTYPE 2
+#define FROMSTRUCT 3
+#define FROMOTHER  4
 /* type */
 typedef struct Type_ *Type;
 typedef struct FieldList_ *FieldList;
@@ -14,7 +16,7 @@ struct Type_{
     enum {BASIC, ARRAY, STRUCTER}kind;
     union
     {
-        // 基本类型
+        // 基本类型,int?float?
         int basic;
         // 数组类型信息包括元素类型与数组大小构成
         struct { Type elem; int size; } array;
@@ -36,6 +38,7 @@ typedef struct Table_ *Table;
 typedef struct FuncName_ *FuncName;
 typedef struct SymbolEntry_ *SymbolEntry;
 typedef struct Var_ *Var;
+typedef struct Expression_ *Expression;
 
 
 
@@ -50,8 +53,10 @@ struct Table_{
 };
 
 struct SymbolEntry_{
-    int type; /* what the name for? */
-    int isDefinited;
+    Type type;
+    int row; 
+    char *name;
+    //int isDefinited;
     union{
         char *ProgramName;
         FuncName fn;
@@ -62,16 +67,23 @@ struct SymbolEntry_{
 };
 
 struct FuncName_ {
-    int tp;
-    Type type;
-    //int param_nr;
+    FieldList param;
 };
 
 struct Var_{
-    int tp; /* BASIC, ...*/
-    Type type;
+    union{
+	int val_int;
+	float val_float;
+    }val;
 };
 
+struct Expression_{
+    Type type;
+    union{
+	int val_int;
+	float val_float;
+    }val;
+};
 /* Log all name */
 typedef struct LogName_ *LogName;
 
@@ -80,10 +92,14 @@ struct LogName_{
     LogName next;
 };
 
+
+
 void addName(char *);
 void Table_init();
-void addToStack(SymbolEntry e);
-void addToStack_new(SymbolEntry);
-void addToTable(SymbolEntry,char *);
+int addToImperSlot(SymbolEntry e);
+void ImperStack_push();
+void ImperStack_pop();
+int addToTable(SymbolEntry);
+void refreshTable(SymbolEntry e,char *name);
 
 #endif

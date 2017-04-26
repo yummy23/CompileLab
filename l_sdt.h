@@ -19,10 +19,10 @@ void OptTag(Node *n);//
 void Tag(Node *n);//
 
 /* Declarators */
-void VarDec(Node *n);//
-void FunDec(Node *n,Type type);//
-void VarList(Node *n);//
-void ParamDec(Node *n);//
+FieldList VarDec(Node *n, Type type, int from);
+SymbolEntry FunDec(Node *n,Type type);
+FieldList VarList(Node *n);
+FieldList ParamDec(Node *n);//
 
 /* statements */
 void CompSt(Node *n);//
@@ -30,9 +30,13 @@ void Stmtlist(Node *n);//
 void Stmt(Node *n);//
 
 /* local definition */
-void DefList();//
-void Def();//
-void DecList();//
-void Dec();//
+void DefList(Node *n,int from);//
+void Def(Node *n, int from);//
+void DecList(Node *n,Type type,int from);//
+void Dec(Node *n,Type type, int from);//
 
+/* Expressions */
+Expression Exp(Node *n, Type type, int from);
+
+int typeEqual(Type t1,Type t2);
 #endif
