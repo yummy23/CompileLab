@@ -47,7 +47,7 @@ struct ImperStack_{
     SymbolEntry e;
 };
 
-struct Table_{
+struct Table_{//NULL head
     char *name;/* the name for each SymbolEntry */
     SymbolEntry e;
 };
@@ -96,10 +96,14 @@ struct LogName_{
 
 void addName(char *);
 void Table_init();
+
 int addToImperSlot(SymbolEntry e);
 void ImperStack_push();
 void ImperStack_pop();
-int addToTable(SymbolEntry);
+
+int addToTable(SymbolEntry);//fail:row succ:0
 void refreshTable(SymbolEntry e,char *name);
+int searchTable(char *name);//define:row not:-1
+Type getType_table(int i);
 
 #endif

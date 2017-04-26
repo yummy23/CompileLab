@@ -72,7 +72,7 @@ if (0==strcmp(chi->name,"FunDec")){
     FunDec(chi,type);
     chi=chi->brother;
     if (0==strcmp(chi->name,"CompSt")){
-        CompSt(chi);
+        CompSt(chi,type);
     }
 }
 else{
@@ -155,7 +155,7 @@ SymbolEntry FunDec(Node *n, Type type){
 
     if (0==strcmp(chi->name,"ID")){
         int ret = addToTable(e);        
-        if (-1==ret){  //redef
+        if (ret>0){  //redef
             printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
         }
         else{
@@ -205,9 +205,9 @@ SymbolEntry FunDec(Node *n, Type type){
    return f;
    }
    */
-
+////////// Statements /////////
 /* a {block} */
-void CompSt(Node *n){
+void CompSt(Node *n, Type retype){
 #ifdef __DEBUG
     printName(n->name);
 #endif
@@ -216,10 +216,62 @@ void CompSt(Node *n){
     chi = chi->brother;
     DefList(chi,FROMOTHER);
 
-    /* 
-       chi=chi->brother;
-       StmtList(chi);
-       */
+    chi=chi->brother;
+    StmtList(chi, retype);
+}
+
+void StmtList(Node *n,Type retype){
+#ifdef __DEBUG
+    printName(n->name);
+#endif
+    Node *chi = n->child;
+    if (chi == NULL) return;
+
+    Stmt(chi,retype);
+    chi = chi->brother;
+}
+
+void Stmt(Node *n,Type retype){
+#ifdef __DEBUG
+    printName(n->name);
+#endif
+    Node *child = n->child;
+    while(child!=NULL)
+	{
+		if(strcmp(child->name,"Compst")==0){
+            CompSt(child,retype); 
+        }
+      /*  else if(strcmp(child->name,"RETURN")==0)
+		{
+			child=child->brother;
+			Type t=Exp(child);
+			if(retype==NULL||t==NULL)return;
+			if(!typeEqual(retype,t))
+			{
+				printf("Error type 8 at line %d: The return type mismatched\n",child->row);
+			}
+			return;
+		}
+		else if(strcmp(child->name,"LP")==0)
+		{
+			child=child->brother;
+			Type t=Exp(child);
+			if(t!=NULL&&!((t->kind==0||t->kind==3)&&t->u.basic==INTTYPE))
+			{
+				printf("Error type ? conditional statement wrong type\n");
+			}
+		}
+        */
+		else if(strcmp(child->name,"Exp")==0)
+		{
+			Exp(child,retype,FROMOTHER);
+		}
+		else if(strcmp(child->name,"Stmt")==0)
+		{
+			Stmt(child,retype);
+		}
+		child=child->brother;
+	}
 }
 
 //////////// local definition ///////////
@@ -227,9 +279,9 @@ void DefList(Node* n,int from){
 #ifdef __DEBUG
     printName(n->name);
 #endif
-    if (n->child == NULL) return;//kong 
-
     Node *chi = n->child;
+    if (chi == NULL) return; 
+
     Def(chi,from);
     chi=chi->brother;
     DefList(chi,from);
@@ -301,9 +353,25 @@ Expression Exp(Node *n, Type type, int from){
     printName(n->name);
 #endif
     Node *chi = n->child;
-    Expression expr = malloc(sizeof(struct Expression_));
-    expr->type = malloc(sizeof(struct Type_));
-    if (0==strcmp(chi->name,"EXP")){
+    Expression expr;
+    //= malloc(sizeof(struct Expression_));
+//    expr->type = malloc(sizeof(struct Type_));
+    if (0==strcmp(chi->name,"Exp")){
+        if (strcmp(chi->brother->name,"LB")&&strcmp(chi->brother->name,"DOT")){
+            Node *chi2 = chi->brother->brother;
+            expr = Exp(chi, type, from);
+            Expression expr2 = Exp(chi2, type, from);
+            if (expr==NULL||expr2==NULL) return NULL;
+            if(expr->type!=NULL&&expr2->type!=NULL&&!typeEqual(expr->type,expr2->type)){
+                printf("Error type 5 at line %d: The type mismatched\n",chi->row);
+                return NULL;
+            }
+            if (expr->type->u.basic == INTTYPE)
+                expr->val.val_int += expr2->val.val_int;
+            else
+                expr->val.val_float += expr2->val.val_float;
+            free(expr2);
+        }
 
     }
     else if (0==strcmp(chi->name,"LP")){
@@ -316,9 +384,34 @@ Expression Exp(Node *n, Type type, int from){
 
     }
     else if (0==strcmp(chi->name,"ID")){
+        int ret = searchTable(chi->value);
+        printf("%d\n",ret);
+        if (chi->brother == NULL){
+            if (ret<0){
+                printf("Error type 1 at line %d: Undefined variable '%s'\n",chi->row,chi->value);    
+                return NULL;
+            }
 
+#ifdef __DEBUG
+
+    printName(n->name);
+#endif
+            expr = malloc(sizeof(struct Expression_));
+#ifdef __DEBUG
+    printName(n->name);
+#endif
+            expr->type = getType_table(ret);
+        }
+        else if (chi->brother != NULL){
+            if (ret<0){
+                printf("Error type 2 at line %d: Undefined function '%s'\n",chi->row,chi->value);
+                return NULL;
+            }
+        } 
     }
     else if (0==strcmp(chi->name,"INT")){
+        expr = malloc(sizeof(struct Expression_));
+        expr->type = malloc(sizeof(struct Type_));
         expr->type->kind = BASIC;
         expr->type->u.basic = INTTYPE;
         expr->val.val_int = chi->value;

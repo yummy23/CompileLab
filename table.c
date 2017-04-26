@@ -78,7 +78,7 @@ void Table_init(){
 }
 
 int addToImperSlot(SymbolEntry e){
-/* need search the recent slot. ret: redec:lineno; succ:0 */
+    /* need search the recent slot. ret: redec:lineno; succ:0 */
     SymbolEntry p = Top->e;
     while(p!=NULL){
         if (0==strcmp(e->name,p->name)){
@@ -98,7 +98,7 @@ void ImperStack_push(){
     Top=s;
 }
 void ImperStack_pop(){
-    
+
 }
 
 int halfsearch(char *name){//fail -1, succ: i
@@ -120,7 +120,7 @@ int halfsearch(char *name){//fail -1, succ: i
 }
 
 /* directed add */
-int addToTable(SymbolEntry e){//fail : -1 succ: 1
+int addToTable(SymbolEntry e){//fail : row succ: 0
     /* add from head */
     int i = halfsearch(e->name);
     if (-1==i){
@@ -131,7 +131,7 @@ int addToTable(SymbolEntry e){//fail : -1 succ: 1
         return -1;
     e->table_next = table[i].e->table_next;    
     table[i].e->table_next = e;
-    return 1;
+    return 0;
 }
 
 /* just need to change the value */
@@ -141,8 +141,22 @@ void refreshTable(SymbolEntry e, char *name){
         printf("-_-`` W T F ! ! !\n");
         exit(0);
     }
-    
-
 }
 
+int searchTable(char *name){//defined:lineno not:-1
+    int i =  halfsearch(name);
+    if (i<0){
+        printf("-_-`` W T F ! ! !\n");
+        exit(0);
+    }
+    if (table[i].e->table_next==NULL){
+        return -1;
+    }
+    else 
+        return i; 
+}
+
+Type getType_table(int i){
+    return table[i].e->table_next->type;
+}
 
