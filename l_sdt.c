@@ -133,7 +133,7 @@ FieldList VarDec(Node *n, Type type, int from){
         f->name = chi->value;
         f->type = type;
 
-        SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
+ /*       SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
         //e->u.fn = malloc(sizeof(struct FuncName_));
         e->type = type;
         e->row = chi->row;
@@ -143,13 +143,14 @@ FieldList VarDec(Node *n, Type type, int from){
         e->table_next = NULL;
 
         int ret = addToImperSlot(e);
-        if (ret>0){//redef
+ */      /* if (ret>0){//redef
+            
             printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
         }
         else{
             addToTable(e);        
         }
-
+*/
 
     }
     else if (0==strcmp(chi->name,"VarDec")){
