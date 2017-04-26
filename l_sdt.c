@@ -215,6 +215,7 @@ void CompSt(Node *n){
     Node *chi = n->child;
     chi = chi->brother;
     DefList(chi,FROMOTHER);
+
     /* 
        chi=chi->brother;
        StmtList(chi);
@@ -226,10 +227,11 @@ void DefList(Node* n,int from){
 #ifdef __DEBUG
     printName(n->name);
 #endif
-    if (n->child == NULL) return;
+    if (n->child == NULL) return;//kong 
 
     Node *chi = n->child;
     Def(chi,from);
+    chi=chi->brother;
     DefList(chi,from);
 }
 
@@ -260,6 +262,7 @@ void Dec(Node *n,Type type,int from){
     Node *chi = n->child;
     FieldList f = VarDec(chi,type,from);
     SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
+    e->u.var = malloc(sizeof(struct Var_));
     e->type = f->type;
     e->row = chi->row;
     e->name = f->name;
@@ -272,9 +275,6 @@ void Dec(Node *n,Type type,int from){
         else{
             chi = chi->brother;
             Expression expr = Exp(chi,type,from);
-#ifdef __DBUGE
-            printTag("BUG!!!");
-#endif
             if(expr!=NULL&&type!=NULL&&!typeEqual(type,expr->type)){
                 printf("Error type 5 at line %d: The type mismatched\n",chi->row);
             }
@@ -301,11 +301,8 @@ Expression Exp(Node *n, Type type, int from){
     printName(n->name);
 #endif
     Node *chi = n->child;
-    perror("BUG!!");
-#ifdef __DBUGE
-            printTag("333BUG!!!");
-#endif
     Expression expr = malloc(sizeof(struct Expression_));
+    expr->type = malloc(sizeof(struct Type_));
     if (0==strcmp(chi->name,"EXP")){
 
     }
@@ -322,9 +319,6 @@ Expression Exp(Node *n, Type type, int from){
 
     }
     else if (0==strcmp(chi->name,"INT")){
-#ifdef __DBUGE
-            printTag("2BUG!!!");
-#endif
         expr->type->kind = BASIC;
         expr->type->u.basic = INTTYPE;
         expr->val.val_int = chi->value;
@@ -332,22 +326,15 @@ Expression Exp(Node *n, Type type, int from){
     else if (0==strcmp(chi->name,"FLOAT")){
 
     }
-#ifdef __DBUGE
-            printTag("1 BUG!!!");
-#endif
-
     return expr;
 }
 
 
-int typeEqual(Type t1,Type t2)
-{
-	if(t1->kind!=t2->kind)
-	{
+int typeEqual(Type t1,Type t2){
+	if(t1->kind!=t2->kind){
 		return 0;
 	}
-	else
-	{
+	else{
 		if(t1->kind==0)	//basic
 		{
 			if(t1->u.basic!=t2->u.basic)
