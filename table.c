@@ -10,8 +10,11 @@ LogName logname = NULL;
 ImperStack Top = NULL;
 Table table;
 int TableSize = 0;
-
+//#define __DEBUG  
 void addName(char *name){
+#ifdef __DEBUG
+    printf("ID =%s\n",name);
+#endif
     /* add from head */
     LogName ln = malloc(sizeof(struct LogName_));
     ln->name = name;
@@ -47,7 +50,6 @@ void addName(char *name){
         }
         else{
             p = p->next;
-            return;
         }
     }
     if (NULL == p->next){
@@ -60,33 +62,37 @@ void Table_init(){
     SearchTree();
 
     Top = malloc(sizeof(struct ImperStack_));
-    Top->e=NULL;
+    Top->e = malloc(sizeof(struct SymbolEntry_));
+    Top->e->stack_next=NULL;
     Top->next=NULL;
     table = malloc(TableSize *sizeof(struct Table_));
+
     int i;
     LogName p = logname;
     for (i=0;i<TableSize;i++){
+
         table[i].e = malloc(sizeof(struct SymbolEntry_));
         table[i].e->stack_next = NULL;
         table[i].e->table_next = NULL;
         table[i].name = p->name;
-#ifdef __DEBUG
-        printf("%d  %s\n",i,table[i].name);
-#endif
         p=p->next;
     }
 }
 
 int addToImperSlot(SymbolEntry e){
     /* need search the recent slot. ret: redec:lineno; succ:0 */
-    SymbolEntry p = Top->e;
+    SymbolEntry p = Top->e->stack_next;
     while(p!=NULL){
+#ifdef __DEBUG
+        printf("%s %s\n",e->name,p->name);
+#endif
         if (0==strcmp(e->name,p->name)){
             return p->row;
         }
+        p=p->stack_next;
     }
-    e->stack_next = Top->e;
-    Top->e = e;
+    e->stack_next = Top->e->stack_next;
+    Top->e->stack_next = e;
     return 0;
 }
 
@@ -94,11 +100,16 @@ int addToImperSlot(SymbolEntry e){
 void ImperStack_push(){
     /* add from head */
     ImperStack s = malloc(sizeof(struct ImperStack_));
+    s->e = malloc(sizeof(struct SymbolEntry_));
+    s->e->stack_next=NULL;
     s->next=Top;
     Top=s;
 }
 void ImperStack_pop(){
-
+    ImperStack s=Top;
+    Top=Top->next;
+    free(s->e);
+    free(s);    
 }
 
 int halfsearch(char *name){//fail -1, succ: i
@@ -127,8 +138,6 @@ int addToTable(SymbolEntry e){//fail : row succ: 0
         printf("-_-`` W T F ! ! !\n");
         exit(0);
     }
-    if (NULL!=table[i].e->table_next) //redefine
-        return -1;
     e->table_next = table[i].e->table_next;    
     table[i].e->table_next = e;
     return 0;

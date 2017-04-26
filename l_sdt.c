@@ -3,7 +3,7 @@
 #include "l_sdt.h"
 #include "table.h"
 
-#define __DEBUG 1
+//#define __DEBUG 1
 
 #ifdef __DEBUG
 
@@ -72,7 +72,7 @@ if (0==strcmp(chi->name,"FunDec")){
     FunDec(chi,type);
     chi=chi->brother;
     if (0==strcmp(chi->name,"CompSt")){
-        CompSt(chi,type);
+        CompSt(chi,type,FROMOTHER);
     }
 }
 else{
@@ -132,6 +132,25 @@ FieldList VarDec(Node *n, Type type, int from){
         f = malloc(sizeof(struct FieldList_));
         f->name = chi->value;
         f->type = type;
+
+        SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
+        //e->u.fn = malloc(sizeof(struct FuncName_));
+        e->type = type;
+        e->row = chi->row;
+        e->name = chi->value;
+
+        e->stack_next = NULL;
+        e->table_next = NULL;
+
+        int ret = addToImperSlot(e);
+        if (ret>0){//redef
+            printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
+        }
+        else{
+            addToTable(e);        
+        }
+
+
     }
     else if (0==strcmp(chi->name,"VarDec")){
         f = VarDec(chi,type,from);
@@ -148,76 +167,76 @@ SymbolEntry FunDec(Node *n, Type type){
     SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
     //e->u.fn = malloc(sizeof(struct FuncName_));
     e->type = type;
+    e->row = chi->row;
     e->name = chi->value;
 
     e->stack_next = NULL;
     e->table_next = NULL;
 
     if (0==strcmp(chi->name,"ID")){
-        int ret = addToTable(e);        
-        if (ret>0){  //redef
+        int ret = addToImperSlot(e);
+        if (ret>0){//redef
             printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
         }
         else{
-            addToImperSlot(e);
+            addToTable(e);        
         }
     }
-    else printf("- _ -`` A O ~ ~ ~\n");
-    /*   chi = chi->brother;
-         chi = chi->brother;
-         if (0==strcmp(chi->name,"VarList")){
-         e->u.fn->param = VarList(chi);
-         }
-         */
+    ImperStack_push();
+    chi = chi->brother;
+    chi = chi->brother;
+    if (0==strcmp(chi->name,"VarList")){
+        e->u.fn = malloc(sizeof(struct FuncName_));
+        e->u.fn->param = VarList(chi);
+    }
     return e;
 }
-/*
-   FieldList VarList(Node *n)
-   {
-   Node* child=n->child;
-   FieldList f;
-   f=ParamDec(child);
-   child=child->brother;
-   if(child!=NULL)
-   {
-   FieldList p=f;
-   child=child->brother;
-   if(p==NULL)f=VarList(child);
-   else{
-   while(p->next!=NULL)p=p->next;
-   p->next=VarList(child);
-   }
-   }
-   return f;
-   }
-   */
+
+FieldList VarList(Node *n)
+{
+    Node* child=n->child;
+    FieldList f;
+    f=ParamDec(child);
+    child=child->brother;
+    if(child!=NULL)
+    {
+        FieldList p=f;
+        child=child->brother;
+        if(p==NULL)f=VarList(child);
+        else{
+            while(p->next!=NULL)p=p->next;
+            p->next=VarList(child);
+        }
+    }
+    return f;
+}
 
 /* xing can */
-/*
-   FieldList ParamDec(Node*n)
-   {
+FieldList ParamDec(Node*n)
+{
 
-   Node *child=n->child;
-   FieldList f;
-   Type type;
-   type=Specifier(child);
-   f=VarDec(child->brother,type,3);
-   return f;
-   }
-   */
+    Node *child=n->child;
+    FieldList f;
+    Type type;
+    type=Specifier(child);
+    f=VarDec(child->brother,type,3);
+    return f;
+}
 ////////// Statements /////////
 /* a {block} */
-void CompSt(Node *n, Type retype){
+void CompSt(Node *n, Type retype,int from){
 #ifdef __DEBUG
     printName(n->name);
 #endif
-    ImperStack_push();
+    if (from == FROMSTRUCT)
+        ImperStack_push();
     Node *chi = n->child;
     chi = chi->brother;
     DefList(chi,FROMOTHER);
 
     chi=chi->brother;
     StmtList(chi, retype);
+    ImperStack_pop();
 }
 
 void StmtList(Node *n,Type retype){
@@ -237,41 +256,41 @@ void Stmt(Node *n,Type retype){
 #endif
     Node *child = n->child;
     while(child!=NULL)
-	{
-		if(strcmp(child->name,"Compst")==0){
-            CompSt(child,retype); 
+    {
+        if(strcmp(child->name,"Compst")==0){
+            CompSt(child,retype,FROMSTRUCT); 
         }
-      /*  else if(strcmp(child->name,"RETURN")==0)
-		{
-			child=child->brother;
-			Type t=Exp(child);
-			if(retype==NULL||t==NULL)return;
-			if(!typeEqual(retype,t))
-			{
-				printf("Error type 8 at line %d: The return type mismatched\n",child->row);
-			}
-			return;
-		}
-		else if(strcmp(child->name,"LP")==0)
-		{
-			child=child->brother;
-			Type t=Exp(child);
-			if(t!=NULL&&!((t->kind==0||t->kind==3)&&t->u.basic==INTTYPE))
-			{
-				printf("Error type ? conditional statement wrong type\n");
-			}
-		}
-        */
-		else if(strcmp(child->name,"Exp")==0)
-		{
-			Exp(child,retype,FROMOTHER);
-		}
-		else if(strcmp(child->name,"Stmt")==0)
-		{
-			Stmt(child,retype);
-		}
-		child=child->brother;
-	}
+        /*  else if(strcmp(child->name,"RETURN")==0)
+            {
+            child=child->brother;
+            Type t=Exp(child);
+            if(retype==NULL||t==NULL)return;
+            if(!typeEqual(retype,t))
+            {
+            printf("Error type 8 at line %d: The return type mismatched\n",child->row);
+            }
+            return;
+            }
+            else if(strcmp(child->name,"LP")==0)
+            {
+            child=child->brother;
+            Type t=Exp(child);
+            if(t!=NULL&&!((t->kind==0||t->kind==3)&&t->u.basic==INTTYPE))
+            {
+            printf("Error type ? conditional statement wrong type\n");
+            }
+            }
+            */
+            else if(strcmp(child->name,"Exp")==0)
+            {
+                Exp(child,retype,FROMOTHER);
+            }
+            else if(strcmp(child->name,"Stmt")==0)
+            {
+                Stmt(child,retype);
+            }
+            child=child->brother;
+    }
 }
 
 //////////// local definition ///////////
@@ -328,6 +347,9 @@ void Dec(Node *n,Type type,int from){
             chi = chi->brother;
             Expression expr = Exp(chi,type,from);
             if(expr!=NULL&&type!=NULL&&!typeEqual(type,expr->type)){
+#ifdef __DEBUG
+                printf("t1=%d t2=%d\n",expr->type->u.basic,type->u.basic);
+#endif
                 printf("Error type 5 at line %d: The type mismatched\n",chi->row);
             }
             else{
@@ -355,7 +377,7 @@ Expression Exp(Node *n, Type type, int from){
     Node *chi = n->child;
     Expression expr;
     //= malloc(sizeof(struct Expression_));
-//    expr->type = malloc(sizeof(struct Type_));
+    //    expr->type = malloc(sizeof(struct Type_));
     if (0==strcmp(chi->name,"Exp")){
         if (strcmp(chi->brother->name,"LB")&&strcmp(chi->brother->name,"DOT")){
             Node *chi2 = chi->brother->brother;
@@ -363,13 +385,18 @@ Expression Exp(Node *n, Type type, int from){
             Expression expr2 = Exp(chi2, type, from);
             if (expr==NULL||expr2==NULL) return NULL;
             if(expr->type!=NULL&&expr2->type!=NULL&&!typeEqual(expr->type,expr2->type)){
+#ifdef __DEBUG
+                printf("t1=%d t2=%d\n",expr->type->u.basic,expr2->type->u.basic);
+#endif
                 printf("Error type 5 at line %d: The type mismatched\n",chi->row);
                 return NULL;
             }
-            if (expr->type->u.basic == INTTYPE)
-                expr->val.val_int += expr2->val.val_int;
-            else
-                expr->val.val_float += expr2->val.val_float;
+            if((chi->brother,"PLUS")){
+                if (expr->type->u.basic == INTTYPE)
+                    expr->val.val_int += expr2->val.val_int;
+                else
+                    expr->val.val_float += expr2->val.val_float;
+            }
             free(expr2);
         }
 
@@ -385,22 +412,16 @@ Expression Exp(Node *n, Type type, int from){
     }
     else if (0==strcmp(chi->name,"ID")){
         int ret = searchTable(chi->value);
-        printf("%d\n",ret);
         if (chi->brother == NULL){
             if (ret<0){
                 printf("Error type 1 at line %d: Undefined variable '%s'\n",chi->row,chi->value);    
                 return NULL;
             }
-
-#ifdef __DEBUG
-
-    printName(n->name);
-#endif
             expr = malloc(sizeof(struct Expression_));
-#ifdef __DEBUG
-    printName(n->name);
-#endif
-            expr->type = getType_table(ret);
+            if (type==NULL)
+                expr->type = getType_table(ret);
+            else
+                expr->type = type;
         }
         else if (chi->brother != NULL){
             if (ret<0){
@@ -414,7 +435,7 @@ Expression Exp(Node *n, Type type, int from){
         expr->type = malloc(sizeof(struct Type_));
         expr->type->kind = BASIC;
         expr->type->u.basic = INTTYPE;
-        expr->val.val_int = chi->value;
+        expr->val.val_int = atoi(chi->value);
     }
     else if (0==strcmp(chi->name,"FLOAT")){
 
@@ -424,31 +445,31 @@ Expression Exp(Node *n, Type type, int from){
 
 
 int typeEqual(Type t1,Type t2){
-	if(t1->kind!=t2->kind){
-		return 0;
-	}
-	else{
-		if(t1->kind==0)	//basic
-		{
-			if(t1->u.basic!=t2->u.basic)
-				return 0;;
-		}
-		else if(t1->kind==2)	//struct
-		{
-			//if a struct do not has  a name 
-		/*struct TODO
-            if(t1->u.structure->name==NULL||t2->u.structure->name==NULL)
-			{
-				return paramEqual(t1->u.structure->inList,t2->u.structure->inList);								
-			}
-			if(strcmp(t1->u.structure->name,t2->u.structure->name)!=0)
-            */
-				return 0;
-		}
-		else if(t1->kind==1)        //array
-		{
-			return typeEqual(t1->u.array.elem,t2->u.array.elem);
-		}
-	}
-	return 1;
+    if(t1->kind!=t2->kind){
+        return 0;
+    }
+    else{
+        if(t1->kind==0)	//basic
+        {
+            if(t1->u.basic!=t2->u.basic)
+                return 0;;
+        }
+        else if(t1->kind==2)	//struct
+        {
+            //if a struct do not has  a name 
+            /*struct TODO
+              if(t1->u.structure->name==NULL||t2->u.structure->name==NULL)
+              {
+              return paramEqual(t1->u.structure->inList,t2->u.structure->inList);								
+              }
+              if(strcmp(t1->u.structure->name,t2->u.structure->name)!=0)
+              */
+            return 0;
+        }
+        else if(t1->kind==1)        //array
+        {
+            return typeEqual(t1->u.array.elem,t2->u.array.elem);
+        }
+    }
+    return 1;
 }

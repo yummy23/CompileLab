@@ -25,7 +25,7 @@ FieldList VarList(Node *n);
 FieldList ParamDec(Node *n);//
 
 /* statements */
-void CompSt(Node *n, Type type);//
+void CompSt(Node *n, Type type, int from);//
 void StmtList(Node *n, Type type);//
 void Stmt(Node *n, Type type);//
 
