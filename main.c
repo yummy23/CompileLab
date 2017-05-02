@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
 	yyrestart(f);
 	yyparse();
 	if(!errorFlag){
-		//printTree();
+		printTree();
 		Table_init();
         	Program(root);
     	}

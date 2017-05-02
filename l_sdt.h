@@ -36,7 +36,7 @@ void DecList(Node *n,Type type,int from);//
 void Dec(Node *n,Type type, int from);//
 
 /* Expressions */
-Expression Exp(Node *n, Type type, int from);
+Expression Exp(Node *n, int from);
 
 int typeEqual(Type t1,Type t2);
 #endif

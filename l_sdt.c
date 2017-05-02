@@ -3,7 +3,7 @@
 #include "l_sdt.h"
 #include "table.h"
 
-//#define __DEBUG 1
+#define __DEBUG 1
 
 #ifdef __DEBUG
 
@@ -133,7 +133,7 @@ FieldList VarDec(Node *n, Type type, int from){
         f->name = chi->value;
         f->type = type;
 
- /*       SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
+        /*       SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
         //e->u.fn = malloc(sizeof(struct FuncName_));
         e->type = type;
         e->row = chi->row;
@@ -143,14 +143,14 @@ FieldList VarDec(Node *n, Type type, int from){
         e->table_next = NULL;
 
         int ret = addToImperSlot(e);
- */      /* if (ret>0){//redef
-            
-            printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
-        }
-        else{
-            addToTable(e);        
-        }
-*/
+        */      /* if (ret>0){//redef
+
+                   printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
+                   }
+                   else{
+                   addToTable(e);        
+                   }
+                   */
 
     }
     else if (0==strcmp(chi->name,"VarDec")){
@@ -261,36 +261,37 @@ void Stmt(Node *n,Type retype){
         if(strcmp(child->name,"Compst")==0){
             CompSt(child,retype,FROMSTRUCT); 
         }
-        /*  else if(strcmp(child->name,"RETURN")==0)
-            {
+        else if(strcmp(child->name,"RETURN")==0)
+        {
             child=child->brother;
-            Type t=Exp(child);
-            if(retype==NULL||t==NULL)return;
-            if(!typeEqual(retype,t))
+            Expression expr = Exp(child,FROMOTHER);
+            if(retype==NULL||expr->type==NULL)return;
+            if(!typeEqual(retype,expr->type))
             {
-            printf("Error type 8 at line %d: The return type mismatched\n",child->row);
+                printf("Error type 8 at line %d: The return type mismatched\n",child->row);
             }
             return;
-            }
-            else if(strcmp(child->name,"LP")==0)
-            {
+        }
+      /*  else if(strcmp(child->name,"LP")==0)
+        {
             child=child->brother;
             Type t=Exp(child);
             if(t!=NULL&&!((t->kind==0||t->kind==3)&&t->u.basic==INTTYPE))
             {
-            printf("Error type ? conditional statement wrong type\n");
+                printf("Error type ? conditional statement wrong type\n");
             }
-            }
-            */
-            else if(strcmp(child->name,"Exp")==0)
-            {
-                Exp(child,retype,FROMOTHER);
-            }
-            else if(strcmp(child->name,"Stmt")==0)
-            {
-                Stmt(child,retype);
-            }
-            child=child->brother;
+        }
+*/
+        else if(strcmp(child->name,"Exp")==0)
+        {
+            Expression expr;
+            expr = Exp(child, FROMOTHER);
+        }
+        else if(strcmp(child->name,"Stmt")==0)
+        {
+            Stmt(child,retype);
+        }
+        child=child->brother;
     }
 }
 
@@ -335,7 +336,7 @@ void Dec(Node *n,Type type,int from){
     FieldList f = VarDec(chi,type,from);
     SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
     e->u.var = malloc(sizeof(struct Var_));
-    e->type = f->type;
+    e->type = type;
     e->row = chi->row;
     e->name = f->name;
     /* then if use type, must be f->type (maybe array)*/
@@ -346,7 +347,7 @@ void Dec(Node *n,Type type,int from){
             printf("Error type 5 at line %d: The type mismatched\n",chi->row);
         else{
             chi = chi->brother;
-            Expression expr = Exp(chi,type,from);
+            Expression expr = Exp(chi,from);
             if(expr!=NULL&&type!=NULL&&!typeEqual(type,expr->type)){
 #ifdef __DEBUG
                 printf("t1=%d t2=%d\n",expr->type->u.basic,type->u.basic);
@@ -371,7 +372,7 @@ void Dec(Node *n,Type type,int from){
 }
 
 //////// Expressions ///////////
-Expression Exp(Node *n, Type type, int from){
+Expression Exp(Node *n, int from){
 #ifdef __DEBUG
     printName(n->name);
 #endif
@@ -382,25 +383,34 @@ Expression Exp(Node *n, Type type, int from){
     if (0==strcmp(chi->name,"Exp")){
         if (strcmp(chi->brother->name,"LB")&&strcmp(chi->brother->name,"DOT")){
             Node *chi2 = chi->brother->brother;
-            expr = Exp(chi, type, from);
-            Expression expr2 = Exp(chi2, type, from);
+            expr = Exp(chi, from);
+            Expression expr2 = Exp(chi2, from);
+#ifdef __DEBUG
+            printf("^^^^^t1=%d t2=%d\n",expr->type->u.basic,expr2->type->u.basic);
+#endif
             if (expr==NULL||expr2==NULL) return NULL;
-            if(expr->type!=NULL&&expr2->type!=NULL&&!typeEqual(expr->type,expr2->type)){
+            if(!typeEqual(expr->type,expr2->type)){
 #ifdef __DEBUG
                 printf("t1=%d t2=%d\n",expr->type->u.basic,expr2->type->u.basic);
 #endif
                 printf("Error type 5 at line %d: The type mismatched\n",chi->row);
                 return NULL;
             }
-            if((chi->brother,"PLUS")){
+            if(0==strcmp(chi->brother->name,"PLUS")){
                 if (expr->type->u.basic == INTTYPE)
                     expr->val.val_int += expr2->val.val_int;
                 else
                     expr->val.val_float += expr2->val.val_float;
+
+            }
+            else if(0==strcmp(chi->brother->name,"ASSIGNOP")){
+                if (0==strcmp(chi->child->name,"INT")||0==strcmp(chi->child->name,"FLOAT")){
+                    printf("Error type 6 at Line %d: the left_hand side of an assignment must be a variable.\n",chi->row);
+
+                }
             }
             free(expr2);
         }
-
     }
     else if (0==strcmp(chi->name,"LP")){
 
@@ -419,10 +429,7 @@ Expression Exp(Node *n, Type type, int from){
                 return NULL;
             }
             expr = malloc(sizeof(struct Expression_));
-            if (type==NULL)
-                expr->type = getType_table(ret);
-            else
-                expr->type = type;
+            expr->type = getType_table(ret);
         }
         else if (chi->brother != NULL){
             if (ret<0){
@@ -432,6 +439,9 @@ Expression Exp(Node *n, Type type, int from){
         } 
     }
     else if (0==strcmp(chi->name,"INT")){
+#ifdef __DEBUG
+        printName(chi->name);
+#endif
         expr = malloc(sizeof(struct Expression_));
         expr->type = malloc(sizeof(struct Type_));
         expr->type->kind = BASIC;
@@ -439,7 +449,14 @@ Expression Exp(Node *n, Type type, int from){
         expr->val.val_int = atoi(chi->value);
     }
     else if (0==strcmp(chi->name,"FLOAT")){
-
+#ifdef __DEBUG
+        printName(chi->name);
+#endif
+        expr = malloc(sizeof(struct Expression_));
+        expr->type = malloc(sizeof(struct Type_));
+        expr->type->kind = BASIC;
+        expr->type->u.basic = FLOATTYPE;
+        expr->val.val_float = atof(chi->value);
     }
     return expr;
 }
@@ -453,7 +470,7 @@ int typeEqual(Type t1,Type t2){
         if(t1->kind==0)	//basic
         {
             if(t1->u.basic!=t2->u.basic)
-                return 0;;
+                return 0;
         }
         else if(t1->kind==2)	//struct
         {
