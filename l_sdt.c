@@ -156,7 +156,9 @@ FieldList VarDec(Node *n, Type type, int from){
     }
     else if (0==strcmp(chi->name,"VarDec")){
         f = VarDec(chi,type,from);
-        /*TODO array*/
+        f->type->kind = ARRAY;
+        f->type->u.array.elem = type;
+        f->type->u.array.size = chi->brother->brother->value;
     }
     return f;
 }
@@ -362,14 +364,11 @@ void Dec(Node *n,Type type,int from){
     if (chi == NULL) {}
     else {
         if (f->type->kind == ARRAY)
-            printf("Error type 5 at line %d: The type mismatched\n",chi->row);
+            printf("Error type 5 at line %d: The type mismatched.\n",chi->row);
         else{
             chi = chi->brother;
             Type expr = Exp(chi);
             if(expr!=NULL&&type!=NULL&&!typeEqual(type,expr)){
-#ifdef __DEBUG
-                printf("t1=%d t2=%d\n",expr->u.basic,type->u.basic);
-#endif
                 printf("Error type 5 at line %d: The type mismatched\n",chi->row);
             }
         }
@@ -441,7 +440,8 @@ Type Exp(Node *n){
 			if(t1==NULL)return NULL;
 			if(t1->kind!=1)
 			{
-				printf("Error type 10 at line %d: '",child->row);
+				printf("Error type 10 at line %d: '%s'",child->row,child->child->value);
+                printf(" must be an array.\n");
 				return NULL;
 			}
 			child2=child2->brother;
@@ -450,7 +450,7 @@ Type Exp(Node *n){
 			if(t2==NULL)return NULL;
 			if(!((t2->kind==BASIC)&&t2->u.basic==INTTYPE))
 			{
-				printf("Error type 12 at line %d: Operands type mistaken\n",child2->row);
+				printf("Error type 12 at line %d: '%s' is not an integer.\n",child2->row,child2->child->value);
 				return NULL;
 			}
 			return t1->u.array.elem;
