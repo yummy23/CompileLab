@@ -36,7 +36,11 @@ void DecList(Node *n,Type type,int from);//
 void Dec(Node *n,Type type, int from);//
 
 /* Expressions */
-Expression Exp(Node *n, int from);
+Type Exp(Node *n);
 
 int typeEqual(Type t1,Type t2);
+int Args(Node* n,FieldList f);
+void printparam(FieldList f);
+void printargs(Node *n);
+void printtype(Type t);
 #endif

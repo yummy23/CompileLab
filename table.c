@@ -169,3 +169,8 @@ Type getType_table(int i){
     return table[i].e->table_next->type;
 }
 
+Functype getFunctype_table(int i){
+    if (table[i].e->table_next->kind==FUNC)
+        return table[i].e->table_next->u.ft;
+    return NULL;
+}

@@ -22,7 +22,7 @@
 %token <node> FLOAT
 %token <node> SEMI COMMA
 %token <node> ASSIGNOP RELOP LT LE GT GE EQ NE
-%token <node> ADD SUB MUL DIV AND OR
+%token <node> PLUS SUB MUL DIV AND OR
 %token <node> DOT NOT
 %token <node> TYPE STRUCT RETURN IF ELSE WHILE
 %token <node> LP RP LB RB LC RC 
@@ -126,7 +126,7 @@ Exp : Exp ASSIGNOP Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);a
 | Exp AND Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);addChild($$,$3);}	
 | Exp OR Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);addChild($$,$3);}
 | Exp RELOP Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);addChild($$,$3);}
-| Exp ADD Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);addChild($$,$3);}
+| Exp PLUS Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);addChild($$,$3);}
 | Exp SUB Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);addChild($$,$3);}
 | Exp MUL Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);addChild($$,$3);}
 | Exp DIV Exp	{$$=creatNode("Exp","");addChild($$,$1);addChild($$,$2);addChild($$,$3);}

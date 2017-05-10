@@ -11,6 +11,7 @@
 /* type */
 typedef struct Type_ *Type;
 typedef struct FieldList_ *FieldList;
+typedef struct Functype_ *Functype;
 
 struct Type_{
     enum {BASIC, ARRAY, STRUCTER}kind;
@@ -32,15 +33,21 @@ struct FieldList_
     FieldList next; // 下一个域
 };
 
+struct Functype_
+{
+	char*name;
+	int row;
+	Type retype;
+	FieldList param;
+};
+
+
 /* table */
 typedef struct ImperStack_ *ImperStack;
 typedef struct Table_ *Table;
 typedef struct FuncName_ *FuncName;
 typedef struct SymbolEntry_ *SymbolEntry;
 typedef struct Var_ *Var;
-typedef struct Expression_ *Expression;
-
-
 
 struct ImperStack_{
     ImperStack next;
@@ -51,39 +58,29 @@ struct Table_{//NULL head
     char *name;/* the name for each SymbolEntry */
     SymbolEntry e;
 };
-
+//TODO in yuyifenxi don't need to record value,!!KISS
 struct SymbolEntry_{
     Type type;
     int row; 
     char *name;
-    //int isDefinited;
+    enum {VAR,FUNC,STRUCTURE}kind;
     union{
         char *ProgramName;
-        FuncName fn;
+        Functype ft;
         Var var;
     }u;
     SymbolEntry stack_next;
     SymbolEntry table_next;
 };
 
-struct FuncName_ {
-    FieldList param;
-};
-
 struct Var_{
     union{
-	int val_int;
-	float val_float;
+	//int val_int;
+	//float val_float;
     }val;
 };
 
-struct Expression_{
-    Type type;
-    union{
-	int val_int;
-	float val_float;
-    }val;
-};
+
 /* Log all name */
 typedef struct LogName_ *LogName;
 
@@ -105,5 +102,6 @@ int addToTable(SymbolEntry);//fail:row succ:0
 void refreshTable(SymbolEntry e,char *name);
 int searchTable(char *name);//define:row not:-1
 Type getType_table(int i);
+Functype getFunctype_table(int i);
 
 #endif

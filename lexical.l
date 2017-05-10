@@ -53,7 +53,7 @@ comment1 (\/\/)({letter_}|{digit}|{ws})*\n
 ">="	{yylval.node=creatNode("RELOP",yytext); return RELOP;}
 "=="	{yylval.node=creatNode("RELOP",yytext); return RELOP;}
 "!="	{yylval.node=creatNode("RELOP",yytext); return RELOP;}
-"+"		{yylval.node=creatNode("ADD",yytext); return ADD;}	
+"+"		{yylval.node=creatNode("PLUS",yytext); return PLUS;}	
 "-"		{yylval.node=creatNode("SUB",yytext); return SUB;}	
 "*"		{yylval.node=creatNode("MUL",yytext); return MUL;}
 "/"		{yylval.node=creatNode("DIV",yytext); return DIV;}
