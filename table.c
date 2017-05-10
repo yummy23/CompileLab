@@ -10,7 +10,7 @@ LogName logname = NULL;
 ImperStack Top = NULL;
 Table table;
 int TableSize = 0;
-//#define __DEBUG  
+//#define __DEBUG 1 
 void addName(char *name){
 #ifdef __DEBUG
     printf("ID =%s\n",name);
@@ -113,29 +113,40 @@ void ImperStack_pop(){
 }
 
 int halfsearch(char *name){//fail -1, succ: i
-    int mid = TableSize/2,l=0,r=TableSize-1,ok=0;
-    while (ok<2){
+    int mid = TableSize/2,l=0,r=TableSize-1;
+    while (l<=r){
+#ifdef __DEBUG
+        printf("table[mid] = %s\n",table[mid].name);
+#endif
         int val = strcmp(name,table[mid].name);
         if (0 == val){
             return mid;
         }
         else if (0>val){
+            r=mid-1;
             mid = (l+mid-1)/2;
         }
         else{
+            l=mid+1;
             mid = (r+mid+1)/2;
         }
-        ok+=(l==mid||r==mid);
     }
     return -1;
 }
 
 /* directed add */
 int addToTable(SymbolEntry e){//fail : row succ: 0
+#ifdef __DEBUG
+    int j;
+    printf("&&&&&table&&&&&\n");
+    for (j=0;j<TableSize;j++){
+        printf("%s\n",table[j].name);
+    }
+#endif
     /* add from head */
     int i = halfsearch(e->name);
     if (-1==i){
-        printf("-_-`` W T F ! ! !\n");
+        printf("-_-`` W T F ! ! !addToTable name = %s\n",e->name);
         exit(0);
     }
     e->table_next = table[i].e->table_next;    
@@ -147,7 +158,7 @@ int addToTable(SymbolEntry e){//fail : row succ: 0
 void refreshTable(SymbolEntry e, char *name){
     int i = halfsearch(e->name);
     if (-1==i){
-        printf("-_-`` W T F ! ! !\n");
+        printf("-_-`` W T F ! ! !refreshT\n");
         exit(0);
     }
 }
@@ -155,7 +166,7 @@ void refreshTable(SymbolEntry e, char *name){
 int searchTable(char *name){//defined:lineno not:-1
     int i =  halfsearch(name);
     if (i<0){
-        printf("-_-`` W T F ! ! !\n");
+        printf("-_-`` W T F ! ! !serachT\n");
         exit(0);
     }
     if (table[i].e->table_next==NULL){

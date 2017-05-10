@@ -30,10 +30,10 @@ void StmtList(Node *n, Type type);//
 void Stmt(Node *n, Type type);//
 
 /* local definition */
-void DefList(Node *n,int from);//
-void Def(Node *n, int from);//
-void DecList(Node *n,Type type,int from);//
-void Dec(Node *n,Type type, int from);//
+FieldList DefList(Node *n,int from);//
+FieldList Def(Node *n, int from);//
+FieldList DecList(Node *n,Type type,int from);//
+FieldList Dec(Node *n,Type type, int from);//
 
 /* Expressions */
 Type Exp(Node *n);
