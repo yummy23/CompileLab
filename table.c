@@ -166,7 +166,7 @@ void refreshTable(SymbolEntry e, char *name){
 int searchTable(char *name){//defined:lineno not:-1
     int i =  halfsearch(name);
     if (i<0){
-        printf("-_-`` W T F ! ! !serachT\n");
+        printf("-_-`` W T F ! ! !serachT name = %s\n",name);
         exit(0);
     }
     if (table[i].e->table_next==NULL){

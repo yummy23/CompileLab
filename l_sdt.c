@@ -116,6 +116,20 @@ Type StructSpecifier(Node *n){
     printName(n->name);
 #endif
     Node *child = n->child->brother;
+    if (0 == strcmp(child->name,"Tag")){
+        int ret = searchTable(child->child->value);
+        if (ret<0){
+            printf("Error type 17 at line %d: Undefined struct ‘%s’\n",child->row,child->child->value);
+            return NULL;
+        }
+        Type t = getType_table(ret);
+        if (t->kind != STRUCTURE){
+            printf("Error type 17 at line %d: Undefined struct ‘%s’\n",child->row,child->child->value);
+            return NULL;
+            }
+            return t;
+    }
+    //structure def
     Type type=malloc(sizeof(struct Type_));
     type->kind = STRUCTER;
     SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
@@ -126,14 +140,17 @@ Type StructSpecifier(Node *n){
     e->stack_next = NULL;
     e->table_next = NULL;
     child = child->brother->brother;
+    ImperStack_push();//avoid redefine
     type -> u.structure = DefList(child,FROMSTRUCT); 
+    ImperStack_pop();
     int ret = addToImperSlot(e);
     if (0==ret){
 printTag("buggggg");
         addToTable(e);
     }
     else{
-        printf("Error type 3 at line %d: Redefined variable'%s', which have defined at line %d\n",e->row,e->name,ret);
+        printf("Error type 16 at Line %d: Duplicated name '%s'\n",e->row,e->name);
+        return NULL;
     }
     return type;
 }
@@ -393,12 +410,21 @@ FieldList Dec(Node *n,Type type,int from){
 #endif
     Node *chi = n->child;
     FieldList f = VarDec(chi,type,from);
-    if (from==FROMSTRUCT) return f;
+    SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
+    e->u.var = malloc(sizeof(struct Var_));
+    if (from==FROMSTRUCT){
+        e->name = f->name;
+        e->row = chi->row;
+        int ret = addToImperSlot(e);
+        if (ret!=0){
+            printf("Error type 15 at Line %d:Redefined field '%s'\n",e->row,e->name);
+            return NULL;
+        }
+        return f;
+    }
 #ifdef __DEBUG
     printTag("Not a structure!");
 #endif
-    SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
-    e->u.var = malloc(sizeof(struct Var_));
     e->type = type;
     e->row = chi->row;
     e->name = f->name;
@@ -421,8 +447,9 @@ FieldList Dec(Node *n,Type type,int from){
     if(0==ret){
         addToTable(e);
     }
-    else{//
+    else{
         printf("Error type 3 at line %d: Redefined variable'%s', which have defined at line %d\n",e->row,e->name,ret);
+        return NULL;
     }
     return f;
 }
