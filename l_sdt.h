@@ -10,7 +10,7 @@
 void Program(Node *n);
 void ExtDefList(Node *n);
 void ExtDef(Node *n);//
-void ExtDecList(Node *n);//
+void ExtDecList(Node *n,Type type);//
 
 /* specifiers */ 
 Type Specifier(Node *n);

@@ -81,6 +81,15 @@ void Table_init(){
 
 int addToImperSlot(SymbolEntry e){
     /* need search the recent slot. ret: redec:lineno; succ:0 */
+    if (Top == NULL){
+        Top = malloc(sizeof(struct ImperStack_));
+        Top->e = malloc(sizeof(struct SymbolEntry_));
+        Top->e->stack_next=NULL;
+        Top->next=NULL;
+        e->stack_next = Top->e->stack_next;
+        Top->e->stack_next = e;
+        return 0;
+    }
     SymbolEntry p = Top->e->stack_next;
     while(p!=NULL){
 #ifdef __DEBUG

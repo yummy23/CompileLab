@@ -57,39 +57,51 @@ void ExtDef(Node *n){
 #endif
         return;
     }
-    /*
-       if (0==strcmp(chi->name,"ExtDecList")){
-       ExtDecList(chi);
-       chi=chi->brother;
-       if (0==strcmp(chi->name,"SEMI")){
-#ifdef __DEBUG
-printTag("SEMI");
-#endif
-return;
-}
-}
-*/
-if (0==strcmp(chi->name,"FunDec")){
-    FunDec(chi,type);
-    chi=chi->brother;
-    if (0==strcmp(chi->name,"CompSt")){
-        CompSt(chi,type,FROMOTHER);
+    if (0==strcmp(chi->name,"ExtDecList")){
+        ExtDecList(chi,type);
+        return;
     }
-}
-else{
-    printf("- _ -`` A O ~ ~ ~\n");
-}
+    if (0==strcmp(chi->name,"FunDec")){
+        FunDec(chi,type);
+        chi=chi->brother;
+        if (0==strcmp(chi->name,"CompSt")){
+            CompSt(chi,type,FROMOTHER);
+        }
+    }
+    else{
+        printf("- _ -`` A O ~ ~ ~\n");
+    }
 
 }
 
 /* xxList */
-/*
-   void ExtDecList(Node *n){
+void ExtDecList(Node *n,Type type){
 #ifdef __DEBUG
-printName(n->name);
+    printName(n->name);
 #endif
+    Node*child=n->child;
+    FieldList f = VarDec(child,type,1);
+    SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
+    e->type = type;
+    e->row = child->row;
+    e->name = f->name;
+    e->kind = STRUCTURE;
+    e->stack_next = NULL;
+    e->table_next = NULL;
+    int ret = addToImperSlot(e);
+    if (ret>0){
+        printf("Error type 16 at Line %d: Duplicated name '%s'\n",e->row,e->name);
+        return;
+    }
+    addToTable(e);
+
+    child=child->brother;
+    if(child!=NULL)
+    {
+        child=child->child;
+        ExtDecList(child,type);
+    }
 }
-*/
 /////////// specifiers //////////
 /* var type: int,float; structer... */
 Type Specifier(Node *n){
@@ -126,8 +138,8 @@ Type StructSpecifier(Node *n){
         if (t->kind != STRUCTURE){
             printf("Error type 17 at line %d: Undefined struct ‘%s’\n",child->row,child->child->value);
             return NULL;
-            }
-            return t;
+        }
+        return t;
     }
     //structure def
     Type type=malloc(sizeof(struct Type_));
@@ -145,7 +157,7 @@ Type StructSpecifier(Node *n){
     ImperStack_pop();
     int ret = addToImperSlot(e);
     if (0==ret){
-printTag("buggggg");
+        printTag("buggggg");
         addToTable(e);
     }
     else{
@@ -167,26 +179,6 @@ FieldList VarDec(Node *n, Type type, int from){
         f = malloc(sizeof(struct FieldList_));
         f->name = chi->value;
         f->type = type;
-
-        /*       SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
-        //e->u.fn = malloc(sizeof(struct FuncName_));
-        e->type = type;
-        e->row = chi->row;
-        e->name = chi->value;
-
-        e->stack_next = NULL;
-        e->table_next = NULL;
-
-        int ret = addToImperSlot(e);
-        */      /* if (ret>0){//redef
-
-                   printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
-                   }
-                   else{
-                   addToTable(e);        
-                   }
-                   */
-
     }
     else if (0==strcmp(chi->name,"VarDec")){
         f = VarDec(chi,type,from);
@@ -203,7 +195,6 @@ SymbolEntry FunDec(Node *n, Type type){
 #endif
     Node *chi = n->child;
     SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
-    //e->u.fn = malloc(sizeof(struct FuncName_));
     e->type = type;
     e->row = chi->row;
     e->name = chi->value;
@@ -213,7 +204,13 @@ SymbolEntry FunDec(Node *n, Type type){
     e->table_next = NULL;
 
     if (0==strcmp(chi->name,"ID")){
+#ifdef __DEBUG
+    printTag("bugggggg!????");
+#endif
         int ret = addToImperSlot(e);
+#ifdef __DEBUG
+    printTag("bugggggg!");
+#endif
         if (ret>0){//redef
             printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
             return NULL;
@@ -221,6 +218,9 @@ SymbolEntry FunDec(Node *n, Type type){
         addToTable(e);        
     }
     ImperStack_push();
+#ifdef __DEBUG
+    printTag("bugggggg!");
+#endif
 
     e->u.ft = malloc(sizeof(struct Functype_));
     e->u.ft->name = chi->value;
@@ -228,7 +228,9 @@ SymbolEntry FunDec(Node *n, Type type){
     e->u.ft -> retype = type;
     chi = chi->brother;
     chi = chi->brother;
-
+#ifdef __DEBUG
+    printTag("bugggggg!");
+#endif
     if (0==strcmp(chi->name,"VarList")){
         e->u.ft->param = VarList(chi);
     }
@@ -309,6 +311,8 @@ void StmtList(Node *n,Type retype){
 
     Stmt(chi,retype);
     chi = chi->brother;
+    if (chi!=NULL)
+        StmtList(chi,retype);
 }
 
 void Stmt(Node *n,Type retype){
@@ -330,7 +334,7 @@ void Stmt(Node *n,Type retype){
             }
             return;
         }
-        /*  else if(strcmp(child->name,"LP")==0)
+        else if(strcmp(child->name,"LP")==0)
             {
             child=child->brother;
             Type t=Exp(child);
@@ -339,7 +343,7 @@ void Stmt(Node *n,Type retype){
             printf("Error type ? conditional statement wrong type\n");
             }
             }
-            */
+            
             else if(strcmp(child->name,"Exp")==0)
                 Exp(child);
             else if(strcmp(child->name,"Stmt")==0)
@@ -491,7 +495,7 @@ Type Exp(Node *n){
                 return NULL;
             }
         }
-        else if(strcmp(child2->name,"PLUS")==0||strcmp(child2->name,"MINUS")==0||strcmp(child2->name,"STAR")==0||strcmp(child2->name,"DIV")==0||strcmp(child2->name,"RELOP")==0)		//+ - * /
+        else if(strcmp(child2->name,"PLUS")==0||strcmp(child2->name,"SUB")==0||strcmp(child2->name,"MUL")==0||strcmp(child2->name,"DIV")==0||strcmp(child2->name,"RELOP")==0)		//+ - * /
         {
             Type t=Exp(child);
             child2=child2->brother;
@@ -553,7 +557,7 @@ Type Exp(Node *n){
         child=child->brother;
         return Exp(child);
     }
-    else if(strcmp(child->name,"MINUS")==0)	//-
+    else if(strcmp(child->name,"SUB")==0)	//-
     {
         child=child->brother;
         Type t=Exp(child);
