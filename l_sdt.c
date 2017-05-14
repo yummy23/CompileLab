@@ -11,8 +11,8 @@
 #endif
 
 #ifdef __DEBUG
-void printName(char *s){
-    printf("****  %s\n",s);
+void printName(char *s, int row){
+    printf("****  %s (%d)\n",s,row);
 }
 
 void printTag(char *s){
@@ -24,7 +24,7 @@ void printTag(char *s){
 /* init syntactic unit, all "this" program */
 void Program(Node *n){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     ExtDefList(n->child);
 }
@@ -32,7 +32,7 @@ void Program(Node *n){
 /* xxList */
 void ExtDefList(Node *n){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *chi=n->child;
     if (NULL!=chi){
@@ -45,7 +45,7 @@ void ExtDefList(Node *n){
 /* definition of a global var | structer | function */
 void ExtDef(Node *n){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *chi=n->child;
     Type type=Specifier(chi);
@@ -77,7 +77,7 @@ void ExtDef(Node *n){
 /* xxList */
 void ExtDecList(Node *n,Type type){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node*child=n->child;
     FieldList f = VarDec(child,type,1);
@@ -106,7 +106,7 @@ void ExtDecList(Node *n,Type type){
 /* var type: int,float; structer... */
 Type Specifier(Node *n){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Type type;
     type=malloc(sizeof(struct Type_));
@@ -125,7 +125,7 @@ Type Specifier(Node *n){
 /* structer's type */
 Type StructSpecifier(Node *n){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *child = n->child->brother;
     if (0 == strcmp(child->name,"Tag")){
@@ -153,11 +153,10 @@ Type StructSpecifier(Node *n){
     e->table_next = NULL;
     child = child->brother->brother;
     ImperStack_push();//avoid redefine
-    type -> u.structure = DefList(child,FROMSTRUCT); 
+    type -> u.structure = DefList(child,FROMSTRUCT);
     ImperStack_pop();
     int ret = addToImperSlot(e);
     if (0==ret){
-        printTag("buggggg");
         addToTable(e);
     }
     else{
@@ -171,27 +170,31 @@ Type StructSpecifier(Node *n){
 //////////// Declarators //////////
 FieldList VarDec(Node *n, Type type, int from){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *chi = n->child;
     FieldList f = NULL;
-    if (0==strcmp(chi->name,"ID")){   
+    if (0==strcmp(chi->name,"ID")){
         f = malloc(sizeof(struct FieldList_));
         f->name = chi->value;
         f->type = type;
     }
     else if (0==strcmp(chi->name,"VarDec")){
-        f = VarDec(chi,type,from);
+        FieldList f2 = VarDec(chi,type,from);
+        f = malloc(sizeof(struct FieldList_));
+        f->name = f2->name;
+        f->type = malloc(sizeof(struct Type_));
         f->type->kind = ARRAY;
-        f->type->u.array.elem = type;
+        f->type->u.array.elem = f2->type;
         f->type->u.array.size = atoi(chi->brother->brother->value);
+        free(f2);
     }
     return f;
 }
 
 SymbolEntry FunDec(Node *n, Type type){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *chi = n->child;
     SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
@@ -204,23 +207,14 @@ SymbolEntry FunDec(Node *n, Type type){
     e->table_next = NULL;
 
     if (0==strcmp(chi->name,"ID")){
-#ifdef __DEBUG
-    printTag("bugggggg!????");
-#endif
         int ret = addToImperSlot(e);
-#ifdef __DEBUG
-    printTag("bugggggg!");
-#endif
         if (ret>0){//redef
             printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
             return NULL;
         }
-        addToTable(e);        
+        addToTable(e);
     }
     ImperStack_push();
-#ifdef __DEBUG
-    printTag("bugggggg!");
-#endif
 
     e->u.ft = malloc(sizeof(struct Functype_));
     e->u.ft->name = chi->value;
@@ -228,9 +222,6 @@ SymbolEntry FunDec(Node *n, Type type){
     e->u.ft -> retype = type;
     chi = chi->brother;
     chi = chi->brother;
-#ifdef __DEBUG
-    printTag("bugggggg!");
-#endif
     if (0==strcmp(chi->name,"VarList")){
         e->u.ft->param = VarList(chi);
     }
@@ -281,7 +272,7 @@ FieldList ParamDec(Node*n)
         printf("Error type 4 at line %d: Redefined function'%s', which have defined at line %d\n",e->row,e->name,ret);
     }
     else{
-        addToTable(e);        
+        addToTable(e);
     }
     return f;
 }
@@ -289,7 +280,7 @@ FieldList ParamDec(Node*n)
 /* a {block} */
 void CompSt(Node *n, Type retype,int from){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     if (from == FROMSTRUCT)
         ImperStack_push();
@@ -304,7 +295,7 @@ void CompSt(Node *n, Type retype,int from){
 
 void StmtList(Node *n,Type retype){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *chi = n->child;
     if (chi == NULL) return;
@@ -317,12 +308,12 @@ void StmtList(Node *n,Type retype){
 
 void Stmt(Node *n,Type retype){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *child = n->child;
     while(child!=NULL){
-        if(strcmp(child->name,"Compst")==0){
-            CompSt(child,retype,FROMSTRUCT); 
+        if(strcmp(child->name,"CompSt")==0){
+            CompSt(child,retype,FROMSTRUCT);
         }
         else if(strcmp(child->name,"RETURN")==0){
             child=child->brother;
@@ -343,7 +334,7 @@ void Stmt(Node *n,Type retype){
             printf("Error type ? conditional statement wrong type\n");
             }
             }
-            
+
             else if(strcmp(child->name,"Exp")==0)
                 Exp(child);
             else if(strcmp(child->name,"Stmt")==0)
@@ -355,7 +346,7 @@ void Stmt(Node *n,Type retype){
 //////////// local definition ///////////
 FieldList DefList(Node* n,int from){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     if(n->child==NULL)return NULL;
     FieldList f;
@@ -364,7 +355,7 @@ FieldList DefList(Node* n,int from){
     FieldList t=f;
     child=child->brother;
     if(t!=NULL){
-        while(t->next!=NULL)    
+        while(t->next!=NULL)
         {
             t=t->next;
         }
@@ -376,7 +367,7 @@ FieldList DefList(Node* n,int from){
 
 FieldList Def(Node *n, int from){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *chi = n->child;
     Type type = Specifier(chi);
@@ -388,7 +379,7 @@ FieldList Def(Node *n, int from){
 
 FieldList DecList(Node *n,Type type,int from){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *child=n->child;
     FieldList f;
@@ -402,7 +393,7 @@ FieldList DecList(Node *n,Type type,int from){
             while(p->next!=NULL)p=p->next;
             p->next=DecList(child,type,from);
         }
-        else 
+        else
             f=DecList(child,type,from);
     }
     return f;
@@ -410,7 +401,7 @@ FieldList DecList(Node *n,Type type,int from){
 
 FieldList Dec(Node *n,Type type,int from){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *chi = n->child;
     FieldList f = VarDec(chi,type,from);
@@ -426,10 +417,8 @@ FieldList Dec(Node *n,Type type,int from){
         }
         return f;
     }
-#ifdef __DEBUG
-    printTag("Not a structure!");
-#endif
-    e->type = type;
+    //e->type = type;
+    e->type = f->type;
     e->row = chi->row;
     e->name = f->name;
     e->kind = VAR;
@@ -461,14 +450,14 @@ FieldList Dec(Node *n,Type type,int from){
 //////// Expressions ///////////
 Type Exp(Node *n){
 #ifdef __DEBUG
-    printName(n->name);
+    printName(n->name,n->row);
 #endif
     Node *child=n->child;
     Type type;
     if(strcmp(child->name,"Exp")==0)
-    {	
+    {
         Node *child2=child->brother;
-        if(strcmp(child2->name,"ASSIGNOP")==0)			
+        if(strcmp(child2->name,"ASSIGNOP")==0)
         {
             //left value
             Node *leftChild=child->child;
@@ -497,6 +486,7 @@ Type Exp(Node *n){
         }
         else if(strcmp(child2->name,"PLUS")==0||strcmp(child2->name,"SUB")==0||strcmp(child2->name,"MUL")==0||strcmp(child2->name,"DIV")==0||strcmp(child2->name,"RELOP")==0)		//+ - * /
         {
+        Node *temp = child2;
             Type t=Exp(child);
             child2=child2->brother;
             Type t2=Exp(child2);
@@ -513,7 +503,7 @@ Type Exp(Node *n){
             Type t1=Exp(child);
             //child's child must be a ID,
             if(t1==NULL)return NULL;
-            if(t1->kind!=1)
+            if(t1->kind!=ARRAY)
             {
                 printf("Error type 10 at line %d: '%s'",child->row,child->child->value);
                 printf(" must be an array.\n");
@@ -552,7 +542,7 @@ Type Exp(Node *n){
         }
 
     }
-    else if(strcmp(child->name,"LP")==0)	//() 
+    else if(strcmp(child->name,"LP")==0)	//()
     {
         child=child->brother;
         return Exp(child);
@@ -600,7 +590,7 @@ Type Exp(Node *n){
         {
             if(param!=NULL)
             {
-                printf("Error type 9 at line : The method '%s(",f->name);
+                printf("Error type 9 at line %d: The method '%s(",child->row,f->name);
                 printparam(param);
                 printf(")'is not applicable for the arguments '()'\n");
             }
@@ -608,7 +598,7 @@ Type Exp(Node *n){
         else
         {
             if(!Args(child,param)){
-                printf("Error type 9 at line : The method '%s(",f->name);
+                printf("Error type 9 at line %d: The method '%s(",child->row,f->name);
                 printparam(param);
                 printf(")'is not applicable for the arguments '(");
                 printargs(child);
@@ -622,14 +612,14 @@ Type Exp(Node *n){
         FieldList f = NULL;
         int ret = searchTable(child->value);
         if(ret>=0) {
-            Type tp = getType_table(ret); 
+            Type tp = getType_table(ret);
             f = malloc(sizeof(struct FieldList_));
             f->name=child->value;
             f->type = tp;
         }
         if(f==NULL)
         {
-            printf("Error type 1 at line %d: Undefined variable '%s'\n",child->row,child->value);	
+            printf("Error type 1 at line %d: Undefined variable '%s'\n",child->row,child->value);
             return NULL;
         }
         return f->type;
@@ -671,11 +661,11 @@ int typeEqual(Type t1,Type t2){
         }
         else if(t1->kind==2)	//struct
         {
-            //if a struct do not has  a name 
+            //if a struct do not has  a name
             /*struct TODO
               if(t1->u.structure->name==NULL||t2->u.structure->name==NULL)
               {
-              return paramEqual(t1->u.structure->structure,t2->u.structure->structure);								
+              return paramEqual(t1->u.structure->structure,t2->u.structure->structure);
               }
               if(strcmp(t1->u.structure->name,t2->u.structure->name)!=0)
               */
@@ -690,7 +680,7 @@ int typeEqual(Type t1,Type t2){
 }
 
 int Args(Node* n,FieldList f)
-{//printName(n->name);
+{//printName(n->name,n->row);
     if(n==NULL&&f==NULL)return 1;
     else if(n==NULL||f==NULL)return 0;
     Node *child=n->child;
@@ -736,4 +726,3 @@ void printtype(Type t){
         printf("[]");
     }
 }
-

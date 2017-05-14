@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 	if(!errorFlag){
 		printTree();
 		Table_init();
-        	Program(root);
-    	}
+       	Program(root);
+    }
 }
 
