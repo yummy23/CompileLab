@@ -413,13 +413,15 @@ FieldList Dec(Node *n,Type type,int from){
             printf("Error type 15 at Line %d:Redefined field '%s'\n",e->row,e->name);
             return NULL;
         }
+        if (chi->brother!=NULL){
+            printf("Error type 15 at line %d: Initialized struct field\n",chi->row);
+        }
         return f;
     }
     //from fun
     e->kind = VAR;
     chi = chi->brother;
-    if (chi == NULL) {}
-    else {
+    if (chi != NULL) {
         if (f->type->kind == ARRAY)
             printf("Error type 5 at line %d: The type mismatched.\n",chi->row);
         else{
