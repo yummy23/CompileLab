@@ -4,7 +4,7 @@
 #include "l_sdt.h"
 #include "table.h"
 
-#define __DEBUG 1
+//#define __DEBUG 
 
 #ifdef __DEBUG
 
@@ -37,8 +37,7 @@ void ExtDefList(Node *n){
     Node *chi=n->child;
     if (NULL!=chi){
         ExtDef(chi);
-        if (NULL!=chi->brother)
-            ExtDefList(chi->brother);
+        ExtDefList(chi->brother);
     }
 }
 
@@ -51,24 +50,14 @@ void ExtDef(Node *n){
     Type type=Specifier(chi);
 
     chi=chi->brother;
-    if (0==strcmp(chi->name,"SEMI")){
-        return;
-    }
-    if (0==strcmp(chi->name,"ExtDecList")){
+
+    if (0==strcmp(chi->name,"ExtDecList"))
         ExtDecList(chi,type);
-        return;
-    }
-    if (0==strcmp(chi->name,"FunDec")){
+    else if (0==strcmp(chi->name,"FunDec")){
         FunDec(chi,type);
         chi=chi->brother;
-        if (0==strcmp(chi->name,"CompSt")){
-            CompSt(chi,type,FROMOTHER);
-        }
+        CompSt(chi,type,FROMOTHER);
     }
-    else{
-        printf("- _ -`` A O ~ ~ ~\n");
-    }
-
 }
 
 /* xxList */
@@ -90,7 +79,8 @@ void ExtDecList(Node *n,Type type){
         printf("Error type 16 at Line %d: Duplicated name '%s'\n",e->row,e->name);
         return;
     }
-    addToTable(e);
+    else 
+        addToTable(e);
 
     child=child->brother;
     if(child!=NULL)
@@ -105,16 +95,17 @@ Type Specifier(Node *n){
 #ifdef __DEBUG
     printName(n->name,n->row);
 #endif
-    Type type;
-    type=malloc(sizeof(struct Type_));
-    type->kind=0;
     Node *child = n->child;
-    if(strcmp(child->value,"int")==0)//basic
-        type->u.basic=INTTYPE;
-    else if(strcmp(child->value,"float")==0)
-        type->u.basic=FLOATTYPE;
-    else{
+    Type type;
+    if (0==strcmp(child->name,"StructSpecifier"))
         type=StructSpecifier(child);
+    else{
+        type = malloc(sizeof(struct Type_));
+        type->kind=0;
+        if(strcmp(child->value,"int")==0)//basic
+            type->u.basic=INTTYPE;
+        else if(strcmp(child->value,"float")==0)
+            type->u.basic=FLOATTYPE;
     }
     return type;
 }
@@ -138,12 +129,16 @@ Type StructSpecifier(Node *n){
         }
         return t;
     }
+
     // name = "OptTag"
     Type type=malloc(sizeof(struct Type_));
     type->kind = STRUCTER;
-    type -> u.structure = DefList(child->brother->brother,FROMSTRUCT);
-    SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
 
+    ImperStack_push();//avoid redefine
+    type -> u.structure = DefList(child->brother->brother,FROMSTRUCT);
+    ImperStack_pop();
+
+    SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
     e->type = type;
     e->row = child->row;
     e->kind = STRUCTURE;
@@ -151,8 +146,6 @@ Type StructSpecifier(Node *n){
     e->table_next = NULL;
     if (child->child!=NULL){//think about no name
         e->name = child->child->value;
-        ImperStack_push();//avoid redefine
-        ImperStack_pop();
         if(0== addToImperSlot(e))
             addToTable(e);
         else{
@@ -250,7 +243,6 @@ FieldList VarList(Node *n)
 /* xing can */
 FieldList ParamDec(Node*n)
 {
-
     Node *child=n->child;
     FieldList f;
     Type type;
