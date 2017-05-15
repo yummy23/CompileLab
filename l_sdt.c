@@ -52,9 +52,6 @@ void ExtDef(Node *n){
 
     chi=chi->brother;
     if (0==strcmp(chi->name,"SEMI")){
-#ifdef __DEBUG
-        printTag("SEMI");
-#endif
         return;
     }
     if (0==strcmp(chi->name,"ExtDecList")){
@@ -141,27 +138,27 @@ Type StructSpecifier(Node *n){
         }
         return t;
     }
-    //structure def
+    // name = "OptTag"
     Type type=malloc(sizeof(struct Type_));
     type->kind = STRUCTER;
+    type -> u.structure = DefList(child->brother->brother,FROMSTRUCT);
     SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
+
     e->type = type;
     e->row = child->row;
-    e->name = child->child->value;
     e->kind = STRUCTURE;
     e->stack_next = NULL;
     e->table_next = NULL;
-    child = child->brother->brother;
-    ImperStack_push();//avoid redefine
-    type -> u.structure = DefList(child,FROMSTRUCT);
-    ImperStack_pop();
-    int ret = addToImperSlot(e);
-    if (0==ret){
-        addToTable(e);
-    }
-    else{
-        printf("Error type 16 at Line %d: Duplicated name '%s'\n",e->row,e->name);
-        return NULL;
+    if (child->child!=NULL){//think about no name
+        e->name = child->child->value;
+        ImperStack_push();//avoid redefine
+        ImperStack_pop();
+        if(0== addToImperSlot(e))
+            addToTable(e);
+        else{
+            printf("Error type 16 at Line %d: Duplicated name '%s'\n",e->row,e->name);
+            return NULL;
+        }
     }
     return type;
 }
@@ -326,20 +323,20 @@ void Stmt(Node *n,Type retype){
             return;
         }
         else if(strcmp(child->name,"LP")==0)
-            {
+        {
             child=child->brother;
             Type t=Exp(child);
             if(t!=NULL&&!((t->kind==0||t->kind==3)&&t->u.basic==INTTYPE))
             {
-            printf("Error type ? conditional statement wrong type\n");
+                printf("Error type ? conditional statement wrong type\n");
             }
-            }
+        }
 
-            else if(strcmp(child->name,"Exp")==0)
-                Exp(child);
-            else if(strcmp(child->name,"Stmt")==0)
-                Stmt(child,retype);
-            child=child->brother;
+        else if(strcmp(child->name,"Exp")==0)
+            Exp(child);
+        else if(strcmp(child->name,"Stmt")==0)
+            Stmt(child,retype);
+        child=child->brother;
     }
 }
 
@@ -407,9 +404,10 @@ FieldList Dec(Node *n,Type type,int from){
     FieldList f = VarDec(chi,type,from);
     SymbolEntry e = malloc(sizeof(struct SymbolEntry_));
     e->u.var = malloc(sizeof(struct Var_));
+    e->type = f->type;
+    e->row = chi->row;
+    e->name = f->name;
     if (from==FROMSTRUCT){
-        e->name = f->name;
-        e->row = chi->row;
         int ret = addToImperSlot(e);
         if (ret!=0){
             printf("Error type 15 at Line %d:Redefined field '%s'\n",e->row,e->name);
@@ -417,12 +415,8 @@ FieldList Dec(Node *n,Type type,int from){
         }
         return f;
     }
-    //e->type = type;
-    e->type = f->type;
-    e->row = chi->row;
-    e->name = f->name;
+    //from fun
     e->kind = VAR;
-    /* then if use type, must be f->type (maybe array)*/
     chi = chi->brother;
     if (chi == NULL) {}
     else {
@@ -486,7 +480,7 @@ Type Exp(Node *n){
         }
         else if(strcmp(child2->name,"PLUS")==0||strcmp(child2->name,"SUB")==0||strcmp(child2->name,"MUL")==0||strcmp(child2->name,"DIV")==0||strcmp(child2->name,"RELOP")==0)		//+ - * /
         {
-        Node *temp = child2;
+            Node *temp = child2;
             Type t=Exp(child);
             child2=child2->brother;
             Type t2=Exp(child2);
